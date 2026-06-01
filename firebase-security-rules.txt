@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ── UTILITY FUNCTIONS ──────────────────────────────────────────────
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isUser(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isAdmin() {
+      return request.auth.token.admin == true;
+    }
+    
+    function isVerified() {
+      return request.auth.token.email_verified == true;
+    }
+    
+    // ── USERS COLLECTION ───────────────────────────────────────────────
+    // Users can only read/write their own profile
+    match /users/{userId} {
+      allow read: if isSignedIn() && (isUser(userId) || isAdmin());
+      allow create: if isSignedIn() && isUser(userId) && 
+        request.resource.data.keys().hasAll(['name', 'mobile', 'uid']);
+      allow update: if isSignedIn() && isUser(userId) && 
+        !request.resource.data.uid.changes(resource.data.uid);
+      allow delete: if isSignedIn() && isUser(userId);
+      
+      // Allow admins to manage users
+      match /{document=**} {
+        allow read, write: if isAdmin();
+      }
+    }
+    
+    // ── PROFILES COLLECTION ────────────────────────────────────────────
+    // All authenticated users can read profiles (for search)
+    // Only own profile can be modified
+    match /profiles/{profileId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+    
+    // ── INTERESTS COLLECTION ───────────────────────────────────────────
+    // Users can create interests and read their own
+    match /interests/{interestId} {
+      allow create: if isSignedIn() && 
+        request.resource.data.from == request.auth.uid &&
+        request.resource.data.status == 'pending';
+      allow read: if isSignedIn() && 
+        (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow update: if isSignedIn() && 
+        (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow delete: if isSignedIn() && resource.data.from == request.auth.uid;
+    }
+    
+    // ── PAYMENTS COLLECTION ────────────────────────────────────────────
+    // Users can create & read their own payments
+    // Only backend via Cloud Functions can update/delete
+    match /payments/{paymentId} {
+      allow create: if isSignedIn() && 
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.amount > 0;
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+    
+    // ── MESSAGES COLLECTION ────────────────────────────────────────────
+    // Only involved users can access messages
+    match /messages/{messageId} {
+      allow create: if isSignedIn() && 
+        request.resource.data.from == request.auth.uid;
+      allow read: if isSignedIn() && 
+        (resource.data.from == request.auth.uid || resource.data.to == request.auth.uid);
+      allow delete: if isSignedIn() && resource.data.from == request.auth.uid;
+      allow update: if false; // Messages are immutable
+    }
+    
+    // ── PHOTOS COLLECTION ──────────────────────────────────────────────
+    // Users can upload photos only to their own folder
+    match /photos/{userId}/{document=**} {
+      allow create, read: if isSignedIn() && isUser(userId);
+      allow delete: if isSignedIn() && isUser(userId);
+      allow update: if false; // Photos are immutable
+    }
+    
+    // ── ADMIN COLLECTION ───────────────────────────────────────────────
+    // Only admins can access
+    match /admin/{document=**} {
+      allow read, write: if isAdmin();
+    }
+    
+    // ── DENY ALL BY DEFAULT ────────────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
