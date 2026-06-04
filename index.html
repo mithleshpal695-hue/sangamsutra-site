@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<meta name="theme-color" content="#CC0000"/>
+<meta name="description" content="Yugmika.com — विवाह की ओर पहला कदम। India trusted matrimonial for smaller towns."/>
+<meta property="og:title" content="Yugmika — विवाह की ओर पहला कदम"/>
+<meta property="og:description" content="सही जीवनसाथी की खोज, अब और भी आसान। Free for first 500 members!"/>
+<meta property="og:image" content="./yugmika_banner.jpg"/>
+<title>Yugmika.com — विवाह की ओर पहला कदम</title>
+<link rel="icon" type="image/png" href="./yugmika_logo_small.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:Georgia,serif;background:#FFF5F5;overflow-x:hidden;}
+  #root{min-height:100vh;}
+  ::-webkit-scrollbar{width:3px;}
+  ::-webkit-scrollbar-track{background:#FFE8E8;}
+  ::-webkit-scrollbar-thumb{background:#CC0000;border-radius:2px;}
+  input,select,textarea,button{font-family:Georgia,serif;}
+  html{scroll-behavior:smooth;}
+</style>
+</head>
+<body>
+<div id="root">
+  <!-- Initial loading shown before JS runs -->
+  <div id="initial-load" style="position:fixed;inset:0;z-index:9999;
+    background:linear-gradient(160deg,#8B0000,#CC0000 55%,#FF4444);
+    display:flex;flex-direction:column;align-items:center;
+    justify-content:center;overflow:hidden;">
+    <div style="position:absolute;width:300px;height:300px;border-radius:50%;
+      background:rgba(255,255,255,0.05);top:-80px;right:-80px;"></div>
+    <img src="./yugmika_banner.jpg" alt="Yugmika"
+      style="width:220px;border-radius:16px;
+      box-shadow:0 16px 48px rgba(0,0,0,0.5);margin-bottom:16px;
+      border:3px solid rgba(255,255,255,0.2);"
+      onerror="this.style.display='none'"/>
+    <div style="font-size:34px;font-weight:800;color:#FFF;font-family:Georgia,serif;">
+      Yugmika
+    </div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.85);margin-top:5px;
+      font-family:'Noto Sans Devanagari',sans-serif;">
+      विवाह की ओर पहला कदम
+    </div>
+    <div style="display:flex;gap:8px;margin-top:20px;">
+      <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+    </div>
+    <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:16px;
+      letter-spacing:3px;">YUGMIKA.COM</div>
+  </div>
+</div>
+<div id="recaptcha-div" style="position:fixed;bottom:0;left:0;z-index:0;"></div>
+
+<style>
+.dot{width:8px;height:8px;border-radius:50%;
+  background:rgba(255,255,255,0.5);animation:bounce 1.4s infinite;}
+.dot:nth-child(2){animation-delay:.2s;}
+.dot:nth-child(3){animation-delay:.4s;}
+@keyframes bounce{0%,100%{transform:scale(1);opacity:.4}50%{transform:scale(1.5);opacity:1}}
+</style>
+
+<!-- React 18 -->
+<script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+
+<!-- Firebase -->
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import{getAuth,RecaptchaVerifier,signInWithPhoneNumber,signOut}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import{getFirestore,doc,setDoc,getDoc,collection,getDocs,deleteDoc,query,orderBy,serverTimestamp,limit}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import{getStorage,ref,uploadBytes,getDownloadURL}from"https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const cfg={
+  apiKey:"AIzaSyCs2LQsdmt0xsYKcW1lRPK8OwMhwiUp0Co",
+  authDomain:"sangamsutra-e0924.firebaseapp.com",
+  projectId:"sangamsutra-e0924",
+  storageBucket:"sangamsutra-e0924.firebasestorage.app",
+  messagingSenderId:"955783199936",
+  appId:"1:955783199936:web:3164b3c59a812cb3750125"
+};
+
+const fa=initializeApp(cfg);
+const _a=getAuth(fa),_d=getFirestore(fa),_s=getStorage(fa);
+
+window.auth=_a;
+
+window.saveUserProfile=async(uid,d)=>{
+  try{await setDoc(doc(_d,"users",uid),{...d,uid,updatedAt:serverTimestamp(),createdAt:d.createdAt||serverTimestamp()},{merge:true});return true;}catch(e){console.error(e);return false;}
+};
+window.getUserProfile=async(uid)=>{
+  try{const s=await getDoc(doc(_d,"users",uid));return s.exists()?{id:s.id,...s.data()}:null;}catch(e){return null;}
+};
+window.getAllProfiles=async()=>{
+  try{const q=query(collection(_d,"users"),orderBy("createdAt","desc"),limit(200));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){return[];}
+};
+window.deleteUserProfile=async(uid)=>{
+  try{await deleteDoc(doc(_d,"users",uid));return true;}catch(e){return false;}
+};
+window.getTotalUserCount=async()=>{
+  try{const s=await getDocs(collection(_d,"users"));return s.size;}catch(e){return 0;}
+};
+window.uploadPhoto=async(uid,file,idx)=>{
+  try{const r=ref(_s,"photos/"+uid+"/p"+idx+"_"+Date.now());const s=await uploadBytes(r,file);return await getDownloadURL(s.ref);}catch(e){return null;}
+};
+window.savePayment=async(uid,d)=>{
+  try{const r=doc(collection(_d,"payments"));await setDoc(r,{uid,...d,createdAt:serverTimestamp()});return r.id;}catch(e){return null;}
+};
+window.getAllPayments=async()=>{
+  try{const q=query(collection(_d,"payments"),orderBy("createdAt","desc"));const s=await getDocs(q);return s.docs.map(d=>({id:d.id,...d.data()}));}catch(e){return[];}
+};
+window.sendInterestDB=async(from,to)=>{
+  try{await setDoc(doc(_d,"interests",from+"_"+to),{from,to,status:"pending",createdAt:serverTimestamp()});return true;}catch(e){return false;}
+};
+window.sendOTPFire=async(phone)=>{
+  try{
+    if(!window._rc){
+      window._rc=new RecaptchaVerifier(_a,"recaptcha-div",{size:"invisible",callback:()=>{}});
+    }
+    return await signInWithPhoneNumber(_a,phone,window._rc);
+  }catch(e){console.error("OTP:",e);return null;}
+};
+window.signOut=async()=>{try{await signOut(_a);}catch(e){}};
+
+console.log("✅ Yugmika Firebase Ready");
+window._fbReady=true;
+
+// Load app after Firebase ready
+const appScript=document.createElement("script");
+appScript.src="./app.js";
+appScript.onload=()=>{
+  console.log("✅ Yugmika App Loaded");
+  // Hide initial loader
+  setTimeout(()=>{
+    const loader=document.getElementById("initial-load");
+    if(loader){
+      loader.style.transition="opacity 0.8s";
+      loader.style.opacity="0";
+      setTimeout(()=>loader.remove(),800);
+    }
+  },500);
+};
+appScript.onerror=(e)=>{
+  console.error("App load failed:",e);
+  document.getElementById("root").innerHTML=
+    '<div style="padding:32px;text-align:center;font-family:Georgia,serif;">'+
+    '<img src="./yugmika_banner.jpg" style="width:180px;border-radius:14px;margin-bottom:16px" onerror="this.style.display=none"/>'+
+    '<h2 style="color:#CC0000;margin-bottom:8px">Yugmika.com</h2>'+
+    '<p style="color:#999;font-size:13px;margin-bottom:20px">Loading error. Check internet and refresh.</p>'+
+    '<button onclick="location.reload()" style="background:#CC0000;color:#FFF;border:none;border-radius:12px;padding:13px 28px;font-size:14px;cursor:pointer;">↺ Refresh</button>'+
+    '<p style="font-size:11px;color:#bbb;margin-top:16px">Support: 8871945848</p></div>';
+};
+document.body.appendChild(appScript);
+</script>
+</body>
+</html>
